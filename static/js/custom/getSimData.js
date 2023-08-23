@@ -133,6 +133,10 @@ map_size_fix = 0;
 // Maps Data
 let map_data = true;
 
+//Simrate
+let last_simrate = 1;
+let speak_simrate = true;
+
 //Press and Hold
 let btnhold;
 
@@ -1352,6 +1356,15 @@ function displayData() {
 		$("#vertical_speed_positive").hide();
 	}
 
+	//simrate change detection
+	if (sim_rate != last_simrate) {
+		if (speak_simrate === true && typeof sim_rate === 'number') {
+			const utterance = new SpeechSynthesisUtterance("Simrate "+sim_rate);
+			speechSynthesis.speak(utterance);
+		}
+	}
+	last_simrate = sim_rate;
+
 	//JF PA-28R
 	if (selected_plane.substring(0, 6) == "PA-28R") {
 		checkAndUpdateButton("#jf_pa28_bcn_light", JF_PA_28R_LIGHT_BCN);
@@ -1855,4 +1868,14 @@ function aileronMinus() {
 function aileronReset() {
 	$("#TrimAileron").val(0);
 	triggerSimEvent('AILERON_TRIM_SET',$("#TrimAileron").val(),true);
+}
+
+function toggleSpeakSimrate() {
+	if (speak_simrate === true) {
+		speak_simrate = false;
+		$("#SpeakSimrateButtonText").text("Speak on change");
+	} else if (speak_simrate === false) {
+		speak_simrate = true;
+		$("#SpeakSimrateButtonText").text("Mute");
+	}
 }
