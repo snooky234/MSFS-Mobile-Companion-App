@@ -203,7 +203,15 @@
 	<!-- Map -->
 	<div class="collapse show" id="collapseMap" data-parent="#myGroup" style="margin-bottom:-30px">
 		<div class="row" id="map_row" style="height:calc(100vh - 90px);height:calc((var(--vh, 1vh) * 100) - 90px);margin-top:10px;margin-bottom:-30px;">
-			<div class="col"  id="map_column" style="position:relative; height=100%;z-index:1;">
+			<div class="col"  id="map_column" style="position:relative;height:100%;z-index:1;">
+				<div id="map_data" style="font-size: 100%;color:#fff;margin-top:-10px;text-align:center;">
+					<span style="margin-right:6px;white-space:nowrap;">Spd: <span style="font-weight:800;"><span id="cur_ias2">N/A</span>/<span id="cur_tas2">N/A</span></span> kt</span>
+					<span style="margin-right:6px;white-space:nowrap;">Alt: <span style="font-weight:800;"><span id="cur_alt2" style="font-weight:800;">N/A</span> (<span id="vertical_speed_positive">+</span><span id="vertical_speed">N/A</span>)</span> ft</span>
+					<span style="margin-right:6px;white-space:nowrap;">Dist: <span id="wp_distance" style="font-weight:800;">N/A</span> nm</span>
+					<span style="margin-right:6px;white-space:nowrap;">Fuel: <span id="fuel_left_percent" style="font-weight:800;">N/A</span>%</span>
+					<span style="margin-right:6px;white-space:nowrap;">SimR: <span id="sim-rate2" style="font-weight:800;">N/A</span>x</span>
+					<span style="margin-right:6px;white-space:nowrap;">ETE: <span style="font-weight:800;"><span id="ete" style="font-weight:800;">N/A</span>/<span id="ete_true">N/A</span></span> min</span>
+				</div>
 				<div id = "map" style = "height: 100%; width: 100%;"></div>
 			</div>
 		</div>
