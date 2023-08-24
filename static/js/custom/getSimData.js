@@ -93,8 +93,11 @@ let landing_g2;
 let landing_vs3;
 let landing_t3;
 let landing_g3;
+let last_landing_t1 = 0;
 
 let sim_rate;
+let last_simrate = 1;
+let speak_simrate = true;
 
 let light_landing;
 let light_taxi;
@@ -132,10 +135,6 @@ map_size_fix = 0;
 
 // Maps Data
 let map_data = true;
-
-//Simrate
-let last_simrate = 1;
-let speak_simrate = true;
 
 //Press and Hold
 let btnhold;
@@ -1356,7 +1355,7 @@ function displayData() {
 		$("#vertical_speed_positive").hide();
 	}
 
-	//simrate change detection
+	//speak simrate on change
 	if (sim_rate != last_simrate) {
 		if (speak_simrate === true && typeof sim_rate === 'number') {
 			const utterance = new SpeechSynthesisUtterance("Simrate "+sim_rate);
@@ -1364,6 +1363,13 @@ function displayData() {
 		}
 	}
 	last_simrate = sim_rate;
+
+	//speak landing_vs on change
+	if (landing_t1 != last_landing_t1) {
+		const utterance = new SpeechSynthesisUtterance(landing_vs1 + "fpm");
+		speechSynthesis.speak(utterance);
+	}
+	last_landing_t1 = landing_t1;
 
 	//JF PA-28R
 	if (selected_plane.substring(0, 6) == "PA-28R") {
