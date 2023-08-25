@@ -109,6 +109,8 @@ let pitot_heat;
 let eng_anti_ice;
 let structural_deice;
 let fuel_tank_selector;
+let auto_switch_fuel_selector = false;
+let last_time_switched_fuel_selector = 0;
 
 let fltpln_arr;
 let gps_next_lat;
@@ -1541,6 +1543,16 @@ function displayData() {
 		checkAndUpdateButton("#ASO_JU52C_AP_HEADING", ASO_JU52C_AP_HEADING, "On", "Off");
 		checkAndUpdateButton("#ASU_JU52C_ENTEISER", structural_deice, "Enteiser (On)", "Enteiser (Off)");
 	}
+
+	// Autoswitch fuel selector
+	if (auto_switch_fuel_selector === true && last_time_switched_fuel_selector + 30000 < Date.now()) {
+		if (fuel_tank_selector == 2) {
+			triggerSimEvent('FUEL_SELECTOR_RIGHT',0,true);
+		} else if (fuel_tank_selector == 3) {
+			triggerSimEvent('FUEL_SELECTOR_LEFT',0,true);
+		}
+		last_time_switched_fuel_selector = Date.now();
+	}
 }
 
 function checkAndUpdateButton(buttonName, variableToCheck, onText="On", offText="Off") {
@@ -1816,4 +1828,16 @@ function aileronMinus() {
 function aileronReset() {
 	$("#TrimAileron").val(0);
 	triggerSimEvent('AILERON_TRIM_SET',$("#TrimAileron").val(),true);
+}
+
+function toggleAutoSwitchTanks() {
+	if (auto_switch_fuel_selector === true) {
+		auto_switch_fuel_selector = false;
+		$("#AutoswitchFuelSelectorButton").removeClass("btn-light");
+		$("#AutoswitchFuelSelectorButton").addClass("btn-secondary");
+	} else if (auto_switch_fuel_selector === false) {
+		auto_switch_fuel_selector = true;
+		$("#AutoswitchFuelSelectorButton").removeClass("btn-secondary");
+		$("#AutoswitchFuelSelectorButton").addClass("btn-light");
+	}
 }

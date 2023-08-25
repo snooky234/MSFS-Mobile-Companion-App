@@ -78,8 +78,9 @@
 								<tr>
 									<td style="width:110px">Fuel Selector:</td>
 									<td>
-										<button onclick="triggerSimEvent('FUEL_SELECTOR_LEFT',0,true);$(this).blur();" type="button" id="fuel_selector_left" class="btn btn-secondary"  style="width:60px;padding-left:0px;padding-right:0px">Left</button>
+										<button onclick="triggerSimEvent('FUEL_SELECTOR_LEFT',0,true);$(this).blur();" type="button" id="fuel_selector_left" class="btn btn-secondary" style="width:60px;padding-left:0px;padding-right:0px">Left</button>
 										<button onclick="triggerSimEvent('FUEL_SELECTOR_RIGHT',0,true);$(this).blur();" type="button" id="fuel_selector_right" class="btn btn-secondary" style="width:60px;padding-left:0px;padding-right:0px">Right</button>
+										<button onclick="toggleAutoSwitchTanks();" type="button" id="AutoswitchFuelSelectorButton" class="btn btn-secondary" style="margin-left: 8px;" title="Toggle autoswitch fuel selector every 30 seconds"><span id="AutoswitchFuelSelectorButtonText">Autoswitch</span></button>
 									</td>
 								</tr>
 							</table>
