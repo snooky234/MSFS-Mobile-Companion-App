@@ -1323,22 +1323,6 @@ function displayData() {
 	$("#landing-g3").text(landing_g3);
 	$("#sim-rate").text(sim_rate);
 
-	//speak simrate on change
-	if (sim_rate != last_simrate) {
-		if (speak_simrate === true && typeof sim_rate === 'number') {
-			const utterance = new SpeechSynthesisUtterance("Simrate "+sim_rate);
-			speechSynthesis.speak(utterance);
-		}
-	}
-	last_simrate = sim_rate;
-
-	//speak landing_vs on change
-	if (landing_t1 != last_landing_t1) {
-		const utterance = new SpeechSynthesisUtterance(landing_vs1 + "fpm");
-		speechSynthesis.speak(utterance);
-	}
-	last_landing_t1 = landing_t1;
-
 	//JF PA-28R
 	if (selected_plane.substring(0, 6) == "PA-28R") {
 		checkAndUpdateButton("#jf_pa28_bcn_light", JF_PA_28R_LIGHT_BCN);
@@ -1555,6 +1539,23 @@ function displayData() {
 		checkAndUpdateButton("#ASO_JU52C_AP_HEADING", ASO_JU52C_AP_HEADING, "On", "Off");
 		checkAndUpdateButton("#ASU_JU52C_ENTEISER", structural_deice, "Enteiser (On)", "Enteiser (Off)");
 	}
+
+	// Voice response
+	//speak simrate on change
+	if (sim_rate != last_simrate) {
+		if (speak_simrate === true && typeof sim_rate === 'number') {
+			const utterance = new SpeechSynthesisUtterance("Simrate "+sim_rate);
+			speechSynthesis.speak(utterance);
+		}
+	}
+	last_simrate = sim_rate;
+
+	//speak landing_vs on change
+	if (landing_t1 != last_landing_t1) {
+		const utterance = new SpeechSynthesisUtterance(landing_vs1 + "fpm");
+		speechSynthesis.speak(utterance);
+	}
+	last_landing_t1 = landing_t1;
 }
 
 function checkAndUpdateButton(buttonName, variableToCheck, onText="On", offText="Off") {
