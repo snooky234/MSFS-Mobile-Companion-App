@@ -1572,8 +1572,7 @@ function displayData() {
 		checkAndUpdateButton("#ASU_JU52C_ENTEISER", structural_deice, "Enteiser (On)", "Enteiser (Off)");
 	}
 	
-	// Voice response
-	//speak simrate on change
+	//Voice response sim_rate on change
 	if (sim_rate != last_simrate) {
 		if (speak_simrate === true && typeof sim_rate === 'number') {
 			const utterance = new SpeechSynthesisUtterance("Simrate "+sim_rate);
@@ -1582,8 +1581,8 @@ function displayData() {
 	}
 	last_simrate = sim_rate;
 
-	//speak landing_vs on change
-	if (landing_t1 != last_landing_t1) {
+	//Voice response landing vs on change
+	if (landing_t1 != landing_vs1) {
 		const utterance = new SpeechSynthesisUtterance(landing_vs1 + "fpm");
 		speechSynthesis.speak(utterance);
 	}
