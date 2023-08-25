@@ -499,6 +499,8 @@ def simconnect_thread_func(threadname):
         ui_friendly_dictionary["FUEL_TANK_LEFT_MAIN_LEVEL"] = round(await aq.get("FUEL_TANK_LEFT_MAIN_LEVEL")*100)
         ui_friendly_dictionary["FUEL_TANK_RIGHT_MAIN_LEVEL"] = round(await aq.get("FUEL_TANK_RIGHT_MAIN_LEVEL")*100)
 
+        ui_friendly_dictionary["FUEL_TANK_SELECTOR"] = await aq.get("FUEL_TANK_SELECTOR:1")
+        
         # Current altitude
         current_alt = await aq.get("INDICATED_ALTITUDE")
         if current_alt > -300:

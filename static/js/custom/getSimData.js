@@ -112,6 +112,9 @@ let light_recognition;
 let pitot_heat;
 let eng_anti_ice;
 let structural_deice;
+let fuel_tank_selector;
+let auto_switch_fuel_selector = false;
+let last_time_switched_fuel_selector = 0;
 
 let fltpln_arr;
 let gps_next_lat;
@@ -1099,6 +1102,7 @@ function getSimulatorData() {
 		pitot_heat = data.PITOT_HEAT;
 		eng_anti_ice = data.ENG_ANTI_ICE;
 		structural_deice = data.STRUCTURAL_DEICE_SWITCH;
+		fuel_tank_selector = data.FUEL_TANK_SELECTOR;
 		
 		//Other
 		landing_vs1 = data.LANDING_VS1;
@@ -1293,6 +1297,9 @@ function displayData() {
     checkAndUpdateButton("#a320-appr-ap", autopilot_appr_mode);
     checkAndUpdateButton("#gear", gear, "Gear (Down)", "Gear (Up)");
     checkAndUpdateButton("#spoilers", spoilers, "Spoilers (On)", "Spoilers (Off)");
+
+	checkAndUpdateButtonCustom("#fuel_selector_left", fuel_tank_selector, 2, onBtn="btn-light", offBtn="btn-secondary", onText="Left", offText="Left");
+	checkAndUpdateButtonCustom("#fuel_selector_right", fuel_tank_selector, 3, onBtn="btn-light", offBtn="btn-secondary", onText="Right", offText="Right");
 
     $("#autopilot-heading-lock-dir").attr('placeholder', autopilot_heading_lock_dir);
     $("#autopilot-altitude-lock-var").attr('placeholder', autopilot_altitude_lock_var);
@@ -1570,6 +1577,16 @@ function displayData() {
 		checkAndUpdateButtonCustom("#ASO_JU52C_PITOT_2", ASO_JU52C_PITOT, 2, onBtn="btn-light", offBtn="btn-secondary", onText="Vergaser", offText="Vergaser");
 		checkAndUpdateButton("#ASO_JU52C_AP_HEADING", ASO_JU52C_AP_HEADING, "On", "Off");
 		checkAndUpdateButton("#ASU_JU52C_ENTEISER", structural_deice, "Enteiser (On)", "Enteiser (Off)");
+	}
+
+	// Autoswitch fuel selector
+	if (auto_switch_fuel_selector === true && last_time_switched_fuel_selector + 30000 < Date.now()) {
+		if (fuel_tank_selector == 2) {
+			triggerSimEvent('FUEL_SELECTOR_RIGHT',0,true);
+		} else if (fuel_tank_selector == 3) {
+			triggerSimEvent('FUEL_SELECTOR_LEFT',0,true);
+		}
+		last_time_switched_fuel_selector = Date.now();
 	}
 	
 	//Voice response sim_rate on change
@@ -1876,6 +1893,18 @@ function aileronReset() {
 	triggerSimEvent('AILERON_TRIM_SET',$("#TrimAileron").val(),true);
 }
 
+function toggleAutoSwitchTanks() {
+	if (auto_switch_fuel_selector === true) {
+		auto_switch_fuel_selector = false;
+		$("#AutoswitchFuelSelectorButton").removeClass("btn-light");
+		$("#AutoswitchFuelSelectorButton").addClass("btn-secondary");
+	} else if (auto_switch_fuel_selector === false) {
+		auto_switch_fuel_selector = true;
+		$("#AutoswitchFuelSelectorButton").removeClass("btn-secondary");
+		$("#AutoswitchFuelSelectorButton").addClass("btn-light");
+	}
+}
+
 function toggleSpeakSimrate() {
 	if (speak_simrate === true) {
 		speak_simrate = false;
@@ -1885,3 +1914,4 @@ function toggleSpeakSimrate() {
 		$("#SpeakSimrateButtonText").text("Mute");
 	}
 }
+
