@@ -128,9 +128,6 @@ let map_size_fix;
 let map_size_fix_mod;
 map_size_fix = 0;
 
-// Maps Data
-let map_data = true;
-
 //Press and Hold
 let btnhold;
 
@@ -1325,13 +1322,6 @@ function displayData() {
 	$("#landing-t3").text(landing_t3);
 	$("#landing-g3").text(landing_g3);
 	$("#sim-rate").text(sim_rate);
-	
-	$("#vertical_speed").text(vertical_speed);
-	if (vertical_speed > 0) {
-		$("#vertical_speed_positive").show();
-	} else {
-		$("#vertical_speed_positive").hide();
-	}
 
 	//speak simrate on change
 	if (sim_rate != last_simrate) {
