@@ -1,5 +1,6 @@
 		<div class="btn-group" role="group" aria-label="Map controls" style="position:relative;z-index:2;top:-3px;">
-			<button id="followModeButton" type="button" class="btn btn-primary btn-sm" onclick="toggleFollowPlane();$(this).blur();"><span id="followMode">Unfollow Plane</span></button>
+			<button id="DataButton" type="button" class="btn btn-primary btn-sm" onclick="toggleMapData();$(this).blur();"><span id="mapDataText">Hide Data</button>
+			<button id="followModeButton" type="button" class="btn btn-primary btn-sm" onclick="toggleFollowPlane();$(this).blur();"><span id="followMode">Unfollow</span></button>
 			<button id="GPStrackButton" type="button" class="btn btn-primary btn-sm" onclick="toggleGPStrack();$(this).blur();">GPS Track</button>
-			<button id="FltPlnButton" type="button" class="btn btn-danger btn-sm" onclick="loadFltPln();$(this).blur();"><span id="FltPlnText">Load Flight Plan</button>
+			<button id="FltPlnButton" type="button" class="btn btn-danger btn-sm" onclick="loadFltPln();$(this).blur();"><span id="FltPlnText">Load FPL</button>
 		</div>
