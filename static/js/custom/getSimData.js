@@ -108,6 +108,7 @@ let light_recognition;
 let pitot_heat;
 let eng_anti_ice;
 let structural_deice;
+let fuel_tank_selector;
 
 let fltpln_arr;
 let gps_next_lat;
@@ -1083,6 +1084,7 @@ function getSimulatorData() {
 		pitot_heat = data.PITOT_HEAT;
 		eng_anti_ice = data.ENG_ANTI_ICE;
 		structural_deice = data.STRUCTURAL_DEICE_SWITCH;
+		fuel_tank_selector = data.FUEL_TANK_SELECTOR;
 		
 		//Other
 		landing_vs1 = data.LANDING_VS1;
@@ -1275,6 +1277,9 @@ function displayData() {
     checkAndUpdateButton("#a320-appr-ap", autopilot_appr_mode);
     checkAndUpdateButton("#gear", gear, "Gear (Down)", "Gear (Up)");
     checkAndUpdateButton("#spoilers", spoilers, "Spoilers (On)", "Spoilers (Off)");
+
+	checkAndUpdateButtonCustom("#fuel_selector_left", fuel_tank_selector, 1, onBtn="btn-light", offBtn="btn-secondary", onText="Left", offText="Left");
+	checkAndUpdateButtonCustom("#fuel_selector_right", fuel_tank_selector, 2, onBtn="btn-light", offBtn="btn-secondary", onText="Right", offText="Right");
 
     $("#autopilot-heading-lock-dir").attr('placeholder', autopilot_heading_lock_dir);
     $("#autopilot-altitude-lock-var").attr('placeholder', autopilot_altitude_lock_var);
