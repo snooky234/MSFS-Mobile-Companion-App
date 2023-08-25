@@ -68,6 +68,7 @@ let autopilot_flight_director_active;
 let autopilot_airspeed_hold;
 let autopilot_airspeed_hold_var;
 let airspeed_indicated;
+let airspeed_true;
 let autopilot_loc_mode;
 let autopilot_appr_mode;
 let autopilot_yaw_damper;
@@ -116,17 +117,24 @@ let fltpln_arr;
 let gps_next_lat;
 let gps_next_lon;
 let gps_next_wp_arr = [[],[]];
+let gps_wp_distance;
+let gps_ete;
 let loadfltpln_switch;
 loadfltpln_switch = 0;
 
 let gear;
 let flaps_position;
 let spoilers;
+let fuel_left_percent;
+let fuel_right_percent;
 
 // Maps Size Fix Function
 let map_size_fix;
 let map_size_fix_mod;
 map_size_fix = 0;
+
+// Maps Data
+let map_data = true;
 
 //Press and Hold
 let btnhold;
@@ -1049,10 +1057,15 @@ function getSimulatorData() {
         autopilot_airspeed_hold = data.AUTOPILOT_FLIGHT_LEVEL_CHANGE;
         autopilot_airspeed_hold_var = data.AUTOPILOT_AIRSPEED_HOLD_VAR;
         airspeed_indicated = data.AIRSPEED_INDICATED;
+        airspeed_true = data.AIRSPEED_TRUE;
+        airspeed_true = data.AIRSPEED_TRUE;
+		vertical_speed = data.VERTICAL_SPEED;
 		autopilot_loc_mode = data.AUTOPILOT_LOC_MODE;
 		autopilot_appr_mode = data.AUTOPILOT_APPR_MODE;
 		autopilot_yaw_damper = data.AUTOPILOT_YAW_DAMPER;
 		plane_heading_degrees = data.PLANE_HEADING_DEGREES;
+		fuel_left_percent = data.FUEL_TANK_LEFT_MAIN_LEVEL;
+		fuel_right_percent = data.FUEL_TANK_RIGHT_MAIN_LEVEL;
 		
 		//NAV
 		nav1_obs_deg = Number(data.NAV1_OBS_DEG);
@@ -1104,6 +1117,8 @@ function getSimulatorData() {
 		gps_next_lat = data.NEXT_WP_LAT;
 		gps_next_lon = data.NEXT_WP_LON;
 		gps_next_wp_arr = [[latitude, longitude],[gps_next_lat, gps_next_lon]];
+		gps_wp_distance = data.GPS_WP_DISTANCE;
+		gps_ete = data.GPS_ETE;
 		
 		//Flight Controls
 		gear = data.GEAR_POSITION;
@@ -1309,7 +1324,11 @@ function displayData() {
 	
 	//Other/Data
 	$("#cur_ias").text(airspeed_indicated);
+	$("#cur_ias2").text(airspeed_indicated);
+	$("#cur_tas").text(airspeed_true);
+	$("#cur_tas2").text(airspeed_true);
 	$("#cur_alt").text(altitude);
+	$("#cur_alt2").text(altitude);
 	$("#cur_hdg").text(plane_heading_degrees);
 	$("#flaps-position").text(flaps_position + "%");
 	$("#landing-vs1").text(landing_vs1);
@@ -1322,6 +1341,19 @@ function displayData() {
 	$("#landing-t3").text(landing_t3);
 	$("#landing-g3").text(landing_g3);
 	$("#sim-rate").text(sim_rate);
+	$("#sim-rate2").text(sim_rate);
+	$("#wp_distance").text(gps_wp_distance);
+	$("#ete").text(gps_ete);
+	$("#ete_true").text(Math.round(gps_ete/sim_rate));
+	$("#fuel_left_percent").text(fuel_left_percent);
+	$("#fuel_right_percent").text(fuel_right_percent);
+	
+	$("#vertical_speed").text(vertical_speed);
+	if (vertical_speed > 0) {
+		$("#vertical_speed_positive").show();
+	} else {
+		$("#vertical_speed_positive").hide();
+	}
 
 	//JF PA-28R
 	if (selected_plane.substring(0, 6) == "PA-28R") {
@@ -1579,7 +1611,7 @@ function toggleFollowPlane() {
 		followPlane = 1
 	}
     if (followPlane === 1) {
-        $("#followMode").text("Unfollow Plane")
+        $("#followMode").text("Unfollow")
         $("#followModeButton").removeClass("btn-danger").addClass("btn-primary")
 		marker.addTo(map);
     }
@@ -1588,9 +1620,21 @@ function toggleFollowPlane() {
         $("#followModeButton").removeClass("btn-primary").addClass("btn-danger")
     }
 	if (followPlane === 3) {
-        $("#followMode").text("Follow Plane")
+        $("#followMode").text("Follow")
 		marker.remove();
     }
+}
+
+function toggleMapData() {
+	if (map_data === true) {
+		$('#map_data').hide();
+		$('#mapDataText').text("Show Data");
+		map_data = false;
+	} else {
+		$('#map_data').show();
+		$('#mapDataText').text("Hide Data");
+		map_data = true;
+	}
 }
 
 function toggleGPStrack() {
@@ -1745,14 +1789,14 @@ function loadFltPln() {
 
     if (loadfltpln_switch === 1) {
         temporaryAlert('', "Loading flight plan.", "success", 2500);
-        $("#FltPlnText").text("Hide Flight Plan");
+        $("#FltPlnText").text("Hide FPL");
         $("#FltPlnButton").removeClass("btn-danger").addClass("btn-primary");
         url_to_call = "/fltpln";
         $.post (url_to_call);
         setTimeout(updatePolylineFltPln, 2500);
         gpswp.setStyle({opacity: 1.0});
     } else {
-        $("#FltPlnText").text("Load Flight Plan");
+        $("#FltPlnText").text("Load FPL");
         $("#FltPlnButton").removeClass("btn-primary").addClass("btn-danger");
         fltpln.setLatLngs([]);
         gpswp.setStyle({opacity: 0});
