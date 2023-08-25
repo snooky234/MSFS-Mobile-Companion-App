@@ -493,7 +493,7 @@ def simconnect_thread_func(threadname):
         ui_friendly_dictionary["FLAPS_HANDLE_PERCENT"] = round(await aq.get("FLAPS_HANDLE_PERCENT")*100)
         ui_friendly_dictionary["SPOILERS_ARMED"] = await aq.get("SPOILERS_HANDLE_POSITION")
 
-        ui_friendly_dictionary["FUEL_TANK_SELECTOR"] = await aq.get("FUEL_TANK_SELECTOR:index")
+        ui_friendly_dictionary["FUEL_TANK_SELECTOR"] = await aq.get("FUEL_TANK_SELECTOR:1")
         
         # Current altitude
         current_alt = await aq.get("INDICATED_ALTITUDE")

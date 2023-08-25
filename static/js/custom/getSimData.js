@@ -1278,8 +1278,8 @@ function displayData() {
     checkAndUpdateButton("#gear", gear, "Gear (Down)", "Gear (Up)");
     checkAndUpdateButton("#spoilers", spoilers, "Spoilers (On)", "Spoilers (Off)");
 
-	checkAndUpdateButtonCustom("#fuel_selector_left", fuel_tank_selector, 1, onBtn="btn-light", offBtn="btn-secondary", onText="Left", offText="Left");
-	checkAndUpdateButtonCustom("#fuel_selector_right", fuel_tank_selector, 2, onBtn="btn-light", offBtn="btn-secondary", onText="Right", offText="Right");
+	checkAndUpdateButtonCustom("#fuel_selector_left", fuel_tank_selector, 2, onBtn="btn-light", offBtn="btn-secondary", onText="Left", offText="Left");
+	checkAndUpdateButtonCustom("#fuel_selector_right", fuel_tank_selector, 3, onBtn="btn-light", offBtn="btn-secondary", onText="Right", offText="Right");
 
     $("#autopilot-heading-lock-dir").attr('placeholder', autopilot_heading_lock_dir);
     $("#autopilot-altitude-lock-var").attr('placeholder', autopilot_altitude_lock_var);
