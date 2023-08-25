@@ -1582,7 +1582,7 @@ function displayData() {
 	last_simrate = sim_rate;
 
 	//Voice response landing vs on change
-	if (landing_t1 != landing_vs1) {
+	if (landing_t1 != last_landing_t1) {
 		const utterance = new SpeechSynthesisUtterance(landing_vs1 + "fpm");
 		speechSynthesis.speak(utterance);
 	}
