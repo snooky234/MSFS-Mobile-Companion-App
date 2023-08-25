@@ -93,8 +93,11 @@ let landing_g2;
 let landing_vs3;
 let landing_t3;
 let landing_g3;
+let last_landing_t1 = 0;
 
 let sim_rate;
+let last_simrate = 1;
+let speak_simrate = true;
 
 let light_landing;
 let light_taxi;
@@ -1568,6 +1571,23 @@ function displayData() {
 		checkAndUpdateButton("#ASO_JU52C_AP_HEADING", ASO_JU52C_AP_HEADING, "On", "Off");
 		checkAndUpdateButton("#ASU_JU52C_ENTEISER", structural_deice, "Enteiser (On)", "Enteiser (Off)");
 	}
+	
+	// Voice response
+	//speak simrate on change
+	if (sim_rate != last_simrate) {
+		if (speak_simrate === true && typeof sim_rate === 'number') {
+			const utterance = new SpeechSynthesisUtterance("Simrate "+sim_rate);
+			speechSynthesis.speak(utterance);
+		}
+	}
+	last_simrate = sim_rate;
+
+	//speak landing_vs on change
+	if (landing_t1 != last_landing_t1) {
+		const utterance = new SpeechSynthesisUtterance(landing_vs1 + "fpm");
+		speechSynthesis.speak(utterance);
+	}
+	last_landing_t1 = landing_t1;
 }
 
 function checkAndUpdateButton(buttonName, variableToCheck, onText="On", offText="Off") {
@@ -1855,4 +1875,14 @@ function aileronMinus() {
 function aileronReset() {
 	$("#TrimAileron").val(0);
 	triggerSimEvent('AILERON_TRIM_SET',$("#TrimAileron").val(),true);
+}
+
+function toggleSpeakSimrate() {
+	if (speak_simrate === true) {
+		speak_simrate = false;
+		$("#SpeakSimrateButtonText").text("Speak on change");
+	} else if (speak_simrate === false) {
+		speak_simrate = true;
+		$("#SpeakSimrateButtonText").text("Mute");
+	}
 }
