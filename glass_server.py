@@ -454,7 +454,9 @@ def simconnect_thread_func(threadname):
         ui_friendly_dictionary["AUTOPILOT_AUTOTHROTTLE"] = await aq.get("AUTOTHROTTLE_ACTIVE")
         ui_friendly_dictionary["AUTOPILOT_YAW_DAMPER"] = await aq.get("AUTOPILOT_YAW_DAMPER")
         ui_friendly_dictionary["AIRSPEED_INDICATED"] = round(await aq.get("AIRSPEED_INDICATED"))
+        ui_friendly_dictionary["AIRSPEED_TRUE"] = round(await aq.get("AIRSPEED_TRUE"))
         ui_friendly_dictionary["AUTOPILOT_AIRSPEED_HOLD"] = await aq.get("AUTOPILOT_AIRSPEED_HOLD")
+        ui_friendly_dictionary["VERTICAL_SPEED"] = round(await aq.get("VERTICAL_SPEED"))
         # ui_friendly_dictionary["AUTOPILOT_MACH_HOLD_VAR"] = round(await aq.get("AUTOPILOT_MACH_HOLD_VAR"),2)
         ui_friendly_dictionary["PLANE_HEADING_DEGREES"] = round(round(await aq.get("PLANE_HEADING_DEGREES_MAGNETIC"), 2) * 180/3.1416, 0)
         # Placeholders - Not Actively Used for stress testing
@@ -488,11 +490,17 @@ def simconnect_thread_func(threadname):
         # GPS Next Waypoint
         ui_friendly_dictionary["NEXT_WP_LAT"] = await aq.get("GPS_WP_NEXT_LAT")
         ui_friendly_dictionary["NEXT_WP_LON"] = await aq.get("GPS_WP_NEXT_LON")
+        ui_friendly_dictionary["GPS_WP_DISTANCE"] = round(await aq.get("GPS_WP_DISTANCE")/1000*0.539957, ndigits=2)
+        ui_friendly_dictionary["GPS_ETE"] = round(await aq.get("GPS_ETE")/60)
         # Other
         ui_friendly_dictionary["GEAR_POSITION"] = await aq.get("GEAR_POSITION:1")
         ui_friendly_dictionary["FLAPS_HANDLE_PERCENT"] = round(await aq.get("FLAPS_HANDLE_PERCENT")*100)
         ui_friendly_dictionary["SPOILERS_ARMED"] = await aq.get("SPOILERS_HANDLE_POSITION")
+        ui_friendly_dictionary["FUEL_TANK_LEFT_MAIN_LEVEL"] = round(await aq.get("FUEL_TANK_LEFT_MAIN_LEVEL")*100)
+        ui_friendly_dictionary["FUEL_TANK_RIGHT_MAIN_LEVEL"] = round(await aq.get("FUEL_TANK_RIGHT_MAIN_LEVEL")*100)
 
+        ui_friendly_dictionary["FUEL_TANK_SELECTOR"] = await aq.get("FUEL_TANK_SELECTOR:1")
+        
         # Current altitude
         current_alt = await aq.get("INDICATED_ALTITUDE")
         if current_alt > -300:
