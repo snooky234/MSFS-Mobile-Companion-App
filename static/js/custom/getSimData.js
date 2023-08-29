@@ -97,7 +97,8 @@ let last_landing_t1 = 0;
 
 let sim_rate;
 let last_simrate = 1;
-let speak_simrate = true;
+let speak_simrate = false;
+let speak_touchdown_speed = false;
 
 let light_landing;
 let light_taxi;
@@ -1578,7 +1579,7 @@ function displayData() {
 		checkAndUpdateButton("#ASO_JU52C_AP_HEADING", ASO_JU52C_AP_HEADING, "On", "Off");
 		checkAndUpdateButton("#ASU_JU52C_ENTEISER", structural_deice, "Enteiser (On)", "Enteiser (Off)");
 	}
-
+  
 	// Autoswitch fuel selector
 	if (auto_switch_fuel_selector === true && last_time_switched_fuel_selector + 30000 < Date.now()) {
 		if (fuel_tank_selector == 2) {
@@ -1598,10 +1599,12 @@ function displayData() {
 	}
 	last_simrate = sim_rate;
 
-	//Voice response landing vs on change
+	//Speak touchdown speed
 	if (landing_t1 != last_landing_t1) {
-		const utterance = new SpeechSynthesisUtterance(landing_vs1 + "fpm");
-		speechSynthesis.speak(utterance);
+		if (speak_touchdown_speed === true && typeof landing_vs1 === 'number') {
+			const utterance = new SpeechSynthesisUtterance(landing_vs1 + "fpm");
+			speechSynthesis.speak(utterance);
+		}
 	}
 	last_landing_t1 = landing_t1;
 }
@@ -1908,10 +1911,27 @@ function toggleAutoSwitchTanks() {
 function toggleSpeakSimrate() {
 	if (speak_simrate === true) {
 		speak_simrate = false;
-		$("#SpeakSimrateButtonText").text("Speak on change");
+		$("#SpeakSimrateButtonText").text("Off");
+		$("#SpeakSimrateButton").removeClass("btn-success");
+		$("#SpeakSimrateButton").addClass("btn-danger");
 	} else if (speak_simrate === false) {
 		speak_simrate = true;
-		$("#SpeakSimrateButtonText").text("Mute");
+		$("#SpeakSimrateButtonText").text("On");
+		$("#SpeakSimrateButton").removeClass("btn-danger");
+		$("#SpeakSimrateButton").addClass("btn-success");
 	}
 }
 
+function toggleTouchdownSpeed() {
+	if (speak_touchdown_speed === true) {
+		speak_touchdown_speed = false;
+		$("#SpeakTouchdownSpeedButtonText").text("Off");
+		$("#SpeakTouchdownSpeedButton").removeClass("btn-success");
+		$("#SpeakTouchdownSpeedButton").addClass("btn-danger");
+	} else if (speak_touchdown_speed === false) {
+		speak_touchdown_speed = true;
+		$("#SpeakTouchdownSpeedButtonText").text("On");
+		$("#SpeakTouchdownSpeedButton").removeClass("btn-danger");
+		$("#SpeakTouchdownSpeedButton").addClass("btn-success");
+	}
+}
