@@ -92,8 +92,12 @@ let landing_g2;
 let landing_vs3;
 let landing_t3;
 let landing_g3;
+let last_landing_t1 = 0;
 
 let sim_rate;
+let last_simrate = 1;
+let speak_simrate = false;
+let speak_touchdown_speed = false;
 
 let light_landing;
 let light_taxi;
@@ -113,17 +117,24 @@ let fltpln_arr;
 let gps_next_lat;
 let gps_next_lon;
 let gps_next_wp_arr = [[],[]];
+let gps_wp_distance;
+let gps_ete;
 let loadfltpln_switch;
 loadfltpln_switch = 0;
 
 let gear;
 let flaps_position;
 let spoilers;
+let fuel_left_percent;
+let fuel_right_percent;
 
 // Maps Size Fix Function
 let map_size_fix;
 let map_size_fix_mod;
 map_size_fix = 0;
+
+// Maps Data
+let map_data = true;
 
 //Press and Hold
 let btnhold;
@@ -1319,7 +1330,7 @@ function displayData() {
 	$("#landing-t3").text(landing_t3);
 	$("#landing-g3").text(landing_g3);
 	$("#sim-rate").text(sim_rate);
-	
+
 	//JF PA-28R
 	if (selected_plane.substring(0, 6) == "PA-28R") {
 		checkAndUpdateButton("#jf_pa28_bcn_light", JF_PA_28R_LIGHT_BCN);
@@ -1536,6 +1547,24 @@ function displayData() {
 		checkAndUpdateButton("#ASO_JU52C_AP_HEADING", ASO_JU52C_AP_HEADING, "On", "Off");
 		checkAndUpdateButton("#ASU_JU52C_ENTEISER", structural_deice, "Enteiser (On)", "Enteiser (Off)");
 	}
+	
+	//Voice response sim_rate on change
+	if (sim_rate != last_simrate) {
+		if (speak_simrate === true && typeof sim_rate === 'number') {
+			const utterance = new SpeechSynthesisUtterance("Simrate "+sim_rate);
+			speechSynthesis.speak(utterance);
+		}
+	}
+	last_simrate = sim_rate;
+
+	//Speak touchdown speed
+	if (landing_t1 != last_landing_t1) {
+		if (speak_touchdown_speed === true && typeof landing_vs1 === 'number') {
+			const utterance = new SpeechSynthesisUtterance(landing_vs1 + "fpm");
+			speechSynthesis.speak(utterance);
+		}
+	}
+	last_landing_t1 = landing_t1;
 }
 
 function checkAndUpdateButton(buttonName, variableToCheck, onText="On", offText="Off") {
@@ -1811,4 +1840,32 @@ function aileronMinus() {
 function aileronReset() {
 	$("#TrimAileron").val(0);
 	triggerSimEvent('AILERON_TRIM_SET',$("#TrimAileron").val(),true);
+}
+
+function toggleSpeakSimrate() {
+	if (speak_simrate === true) {
+		speak_simrate = false;
+		$("#SpeakSimrateButtonText").text("Off");
+		$("#SpeakSimrateButton").removeClass("btn-success");
+		$("#SpeakSimrateButton").addClass("btn-danger");
+	} else if (speak_simrate === false) {
+		speak_simrate = true;
+		$("#SpeakSimrateButtonText").text("On");
+		$("#SpeakSimrateButton").removeClass("btn-danger");
+		$("#SpeakSimrateButton").addClass("btn-success");
+	}
+}
+
+function toggleTouchdownSpeed() {
+	if (speak_touchdown_speed === true) {
+		speak_touchdown_speed = false;
+		$("#SpeakTouchdownSpeedButtonText").text("Off");
+		$("#SpeakTouchdownSpeedButton").removeClass("btn-success");
+		$("#SpeakTouchdownSpeedButton").addClass("btn-danger");
+	} else if (speak_touchdown_speed === false) {
+		speak_touchdown_speed = true;
+		$("#SpeakTouchdownSpeedButtonText").text("On");
+		$("#SpeakTouchdownSpeedButton").removeClass("btn-danger");
+		$("#SpeakTouchdownSpeedButton").addClass("btn-success");
+	}
 }
