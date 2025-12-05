@@ -491,7 +491,13 @@ def simconnect_thread_func(threadname):
         ui_friendly_dictionary["NEXT_WP_LAT"] = await aq.get("GPS_WP_NEXT_LAT")
         ui_friendly_dictionary["NEXT_WP_LON"] = await aq.get("GPS_WP_NEXT_LON")
         ui_friendly_dictionary["GPS_WP_DISTANCE"] = round(await aq.get("GPS_WP_DISTANCE")/1000*0.539957, ndigits=2)
-        ui_friendly_dictionary["GPS_ETE"] = round(await aq.get("GPS_ETE")/60)
+        
+        # GPS ETE in HH:MM format
+        gps_ete_minutes = round(await aq.get("GPS_ETE")/60)
+        ete_hours = gps_ete_minutes // 60
+        ete_mins = gps_ete_minutes % 60
+        ui_friendly_dictionary["GPS_ETE"] = f"{ete_hours:02d}:{ete_mins:02d}"
+        ui_friendly_dictionary["GPS_ETE_MINUTES"] = gps_ete_minutes
         # Other
         ui_friendly_dictionary["GEAR_POSITION"] = await aq.get("GEAR_POSITION:1")
         ui_friendly_dictionary["FLAPS_HANDLE_PERCENT"] = round(await aq.get("FLAPS_HANDLE_PERCENT")*100)
@@ -500,6 +506,39 @@ def simconnect_thread_func(threadname):
         ui_friendly_dictionary["FUEL_TANK_RIGHT_MAIN_LEVEL"] = round(await aq.get("FUEL_TANK_RIGHT_MAIN_LEVEL")*100)
 
         ui_friendly_dictionary["FUEL_TANK_SELECTOR"] = await aq.get("FUEL_TANK_SELECTOR:1")
+        
+        # Fuel consumption and remaining flight time calculation
+        try:
+            # Get total fuel quantity in gallons
+            fuel_total_quantity = await aq.get("FUEL_TOTAL_QUANTITY")
+            
+            # Get fuel flow for each engine in gallons per hour
+            num_engines = await aq.get("NUMBER_OF_ENGINES")
+            total_fuel_flow_gph = 0
+            
+            for engine in range(1, int(num_engines) + 1):
+                fuel_flow = await aq.get(f"ENG_FUEL_FLOW_GPH:{engine}")
+                if fuel_flow is not None:
+                    total_fuel_flow_gph += fuel_flow
+            
+            ui_friendly_dictionary["FUEL_TOTAL_QUANTITY"] = round(fuel_total_quantity, 1)
+            ui_friendly_dictionary["FUEL_FLOW_TOTAL_GPH"] = round(total_fuel_flow_gph, 1)
+            
+            # Calculate remaining flight time in hours
+            if total_fuel_flow_gph > 0.1:  # Avoid division by zero and very small values
+                fuel_remaining_hours = fuel_total_quantity / total_fuel_flow_gph
+                fuel_remaining_minutes = int(fuel_remaining_hours * 60)
+                
+                # Format as HH:MM
+                hours = fuel_remaining_minutes // 60
+                minutes = fuel_remaining_minutes % 60
+                ui_friendly_dictionary["FUEL_REMAINING_TIME"] = f"{hours:02d}:{minutes:02d}"
+            else:
+                ui_friendly_dictionary["FUEL_REMAINING_TIME"] = "N/A"
+        except:
+            ui_friendly_dictionary["FUEL_TOTAL_QUANTITY"] = 0
+            ui_friendly_dictionary["FUEL_FLOW_TOTAL_GPH"] = 0
+            ui_friendly_dictionary["FUEL_REMAINING_TIME"] = "N/A"
         
         # Current altitude
         current_alt = await aq.get("INDICATED_ALTITUDE")
