@@ -1365,11 +1365,13 @@ function displayData() {
 	let ete_true_hours = Math.floor(ete_true_minutes / 60);
 	let ete_true_mins = ete_true_minutes % 60;
 	$("#ete_true").text(String(ete_true_hours).padStart(2, '0') + ":" + String(ete_true_mins).padStart(2, '0'));
-	// Show/hide ETE-True container based on sim rate
+	// Show/hide ETE-True and SimR containers based on sim rate
 	if (sim_rate > 1) {
 		$("#ete_true_container").show();
+		$("#sim_rate_container").show();
 	} else {
 		$("#ete_true_container").hide();
+		$("#sim_rate_container").hide();
 	}
 	$("#fuel_left_percent").text(fuel_left_percent);
 	$("#fuel_right_percent").text(fuel_right_percent);
@@ -1377,6 +1379,31 @@ function displayData() {
 	$("#fuel_total_quantity_display").text(fuel_total_quantity);
 	$("#fuel_flow_total_gph_display").text(fuel_flow_total_gph);
 	$("#fuel_remaining_time_display").text(fuel_remaining_time);
+	
+	// Color code fuel_remaining_time based on comparison with ETE
+	if (fuel_remaining_time !== "N/A" && gps_ete_minutes > 0) {
+		// Parse fuel_remaining_time (HH:MM format) to minutes
+		let fuel_time_parts = fuel_remaining_time.split(":");
+		let fuel_time_minutes = parseInt(fuel_time_parts[0]) * 60 + parseInt(fuel_time_parts[1]);
+		
+		// Calculate thresholds
+		let ete_plus_10_percent = gps_ete_minutes * 1.1;
+		
+		// Apply color based on comparison
+		if (fuel_time_minutes >= ete_plus_10_percent) {
+			// Green: Fuel time >= ETE + 10%
+			$("#fuel_remaining_time").css("color", "#48e36cff");
+		} else if (fuel_time_minutes >= gps_ete_minutes) {
+			// Yellow: Fuel time between ETE and ETE + 10%
+			$("#fuel_remaining_time").css("color", "#ffd24aff");
+		} else {
+			// Red: Fuel time < ETE
+			$("#fuel_remaining_time").css("color", "#ff0019ff");
+		}
+	} else {
+		// Reset to default color if no valid data
+		$("#fuel_remaining_time").css("color", "");
+	}
 	
 	$("#vertical_speed").text(vertical_speed);
 	if (vertical_speed > 0) {
