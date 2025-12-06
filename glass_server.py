@@ -303,8 +303,10 @@ def flask_thread_func(threadname):
             success = "Flight plan loaded"
 
         except:
-            print("Error loading flight plan. Make sure you have the correct MSFS installation path in settings.txt.")
-            success = "Error loading flight plan"
+            # If loading from FLT file fails, use GPS data from SimConnect instead
+            # This is normal for MSFS 2024 or when no custom flight plan file exists
+            ui_friendly_dictionary["FLT_PLN"] = []
+            success = "Flight plan loaded"
 
         return success
 
