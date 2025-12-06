@@ -273,15 +273,24 @@
     // Adding layers to the map
     map.addLayer(basic);
 
+    var satellite = new L.tileLayer.provider('Esri.WorldImagery');
+    var satelliteLabels = new L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles &copy; Esri',
+        maxZoom: 16,
+        opacity: 1
+    });
+
     var baseLayers = {
         "Dark": grayscale,
         "Open Street": openstreet,
         "Pale": simple,
+        "Satellite": satellite,
         "Topo": topo,
         "Default": basic,
     }
     var overlays = {
-        "Aviation": openaip_cached_basemap
+        "Aviation": openaip_cached_basemap,
+        "Labels": satelliteLabels
     }
 
     // Add control
