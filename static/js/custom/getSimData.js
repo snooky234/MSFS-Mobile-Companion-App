@@ -68,6 +68,7 @@ let autopilot_flight_director_active;
 let autopilot_airspeed_hold;
 let autopilot_airspeed_hold_var;
 let airspeed_indicated;
+let airspeed_true;
 let autopilot_loc_mode;
 let autopilot_appr_mode;
 let autopilot_yaw_damper;
@@ -92,8 +93,12 @@ let landing_g2;
 let landing_vs3;
 let landing_t3;
 let landing_g3;
+let last_landing_t1 = 0;
 
 let sim_rate;
+let last_simrate = 1;
+let speak_simrate = false;
+let speak_touchdown_speed = false;
 
 let light_landing;
 let light_taxi;
@@ -108,22 +113,36 @@ let light_recognition;
 let pitot_heat;
 let eng_anti_ice;
 let structural_deice;
+let fuel_tank_selector;
+let auto_switch_fuel_selector = false;
+let last_time_switched_fuel_selector = 0;
 
 let fltpln_arr;
 let gps_next_lat;
 let gps_next_lon;
 let gps_next_wp_arr = [[],[]];
+let gps_wp_distance;
+let gps_ete;
+let gps_ete_minutes;
 let loadfltpln_switch;
 loadfltpln_switch = 0;
 
 let gear;
 let flaps_position;
 let spoilers;
+let fuel_left_percent;
+let fuel_right_percent;
+let fuel_remaining_time;
+let fuel_total_quantity;
+let fuel_flow_total_gph;
 
 // Maps Size Fix Function
 let map_size_fix;
 let map_size_fix_mod;
 map_size_fix = 0;
+
+// Maps Data
+let map_data = true;
 
 //Press and Hold
 let btnhold;
@@ -1046,10 +1065,18 @@ function getSimulatorData() {
         autopilot_airspeed_hold = data.AUTOPILOT_FLIGHT_LEVEL_CHANGE;
         autopilot_airspeed_hold_var = data.AUTOPILOT_AIRSPEED_HOLD_VAR;
         airspeed_indicated = data.AIRSPEED_INDICATED;
+        airspeed_true = data.AIRSPEED_TRUE;
+        airspeed_true = data.AIRSPEED_TRUE;
+		vertical_speed = data.VERTICAL_SPEED;
 		autopilot_loc_mode = data.AUTOPILOT_LOC_MODE;
 		autopilot_appr_mode = data.AUTOPILOT_APPR_MODE;
 		autopilot_yaw_damper = data.AUTOPILOT_YAW_DAMPER;
 		plane_heading_degrees = data.PLANE_HEADING_DEGREES;
+		fuel_left_percent = data.FUEL_TANK_LEFT_MAIN_LEVEL;
+		fuel_right_percent = data.FUEL_TANK_RIGHT_MAIN_LEVEL;
+		fuel_remaining_time = data.FUEL_REMAINING_TIME;
+		fuel_total_quantity = data.FUEL_TOTAL_QUANTITY;
+		fuel_flow_total_gph = data.FUEL_FLOW_TOTAL_GPH;
 		
 		//NAV
 		nav1_obs_deg = Number(data.NAV1_OBS_DEG);
@@ -1083,6 +1110,7 @@ function getSimulatorData() {
 		pitot_heat = data.PITOT_HEAT;
 		eng_anti_ice = data.ENG_ANTI_ICE;
 		structural_deice = data.STRUCTURAL_DEICE_SWITCH;
+		fuel_tank_selector = data.FUEL_TANK_SELECTOR;
 		
 		//Other
 		landing_vs1 = data.LANDING_VS1;
@@ -1101,6 +1129,9 @@ function getSimulatorData() {
 		gps_next_lat = data.NEXT_WP_LAT;
 		gps_next_lon = data.NEXT_WP_LON;
 		gps_next_wp_arr = [[latitude, longitude],[gps_next_lat, gps_next_lon]];
+		gps_wp_distance = data.GPS_WP_DISTANCE;
+		gps_ete = data.GPS_ETE;
+		gps_ete_minutes = data.GPS_ETE_MINUTES;
 		
 		//Flight Controls
 		gear = data.GEAR_POSITION;
@@ -1276,6 +1307,9 @@ function displayData() {
     checkAndUpdateButton("#gear", gear, "Gear (Down)", "Gear (Up)");
     checkAndUpdateButton("#spoilers", spoilers, "Spoilers (On)", "Spoilers (Off)");
 
+	checkAndUpdateButtonCustom("#fuel_selector_left", fuel_tank_selector, 2, onBtn="btn-light", offBtn="btn-secondary", onText="Left", offText="Left");
+	checkAndUpdateButtonCustom("#fuel_selector_right", fuel_tank_selector, 3, onBtn="btn-light", offBtn="btn-secondary", onText="Right", offText="Right");
+
     $("#autopilot-heading-lock-dir").attr('placeholder', autopilot_heading_lock_dir);
     $("#autopilot-altitude-lock-var").attr('placeholder', autopilot_altitude_lock_var);
     $("#autopilot-airspeed-hold-var").attr('placeholder', autopilot_airspeed_hold_var);
@@ -1306,7 +1340,11 @@ function displayData() {
 	
 	//Other/Data
 	$("#cur_ias").text(airspeed_indicated);
+	$("#cur_ias2").text(airspeed_indicated);
+	$("#cur_tas").text(airspeed_true);
+	$("#cur_tas2").text(airspeed_true);
 	$("#cur_alt").text(altitude);
+	$("#cur_alt2").text(altitude);
 	$("#cur_hdg").text(plane_heading_degrees);
 	$("#flaps-position").text(flaps_position + "%");
 	$("#landing-vs1").text(landing_vs1);
@@ -1319,7 +1357,61 @@ function displayData() {
 	$("#landing-t3").text(landing_t3);
 	$("#landing-g3").text(landing_g3);
 	$("#sim-rate").text(sim_rate);
+	$("#sim-rate2").text(sim_rate);
+	$("#wp_distance").text(gps_wp_distance);
+	$("#ete").text(gps_ete);
+	// Calculate true ETE considering sim rate and format as HH:MM
+	let ete_true_minutes = Math.round(gps_ete_minutes/sim_rate);
+	let ete_true_hours = Math.floor(ete_true_minutes / 60);
+	let ete_true_mins = ete_true_minutes % 60;
+	$("#ete_true").text(String(ete_true_hours).padStart(2, '0') + ":" + String(ete_true_mins).padStart(2, '0'));
+	// Show/hide ETE-True and SimR containers based on sim rate
+	if (sim_rate > 1) {
+		$("#ete_true_container").show();
+		$("#sim_rate_container").show();
+	} else {
+		$("#ete_true_container").hide();
+		$("#sim_rate_container").hide();
+	}
+	$("#fuel_left_percent").text(fuel_left_percent);
+	$("#fuel_right_percent").text(fuel_right_percent);
+	$("#fuel_remaining_time").text(fuel_remaining_time);
+	$("#fuel_total_quantity_display").text(fuel_total_quantity);
+	$("#fuel_flow_total_gph_display").text(fuel_flow_total_gph);
+	$("#fuel_remaining_time_display").text(fuel_remaining_time);
 	
+	// Color code fuel_remaining_time based on comparison with ETE
+	if (fuel_remaining_time !== "N/A" && gps_ete_minutes > 0) {
+		// Parse fuel_remaining_time (HH:MM format) to minutes
+		let fuel_time_parts = fuel_remaining_time.split(":");
+		let fuel_time_minutes = parseInt(fuel_time_parts[0]) * 60 + parseInt(fuel_time_parts[1]);
+		
+		// Calculate thresholds
+		let ete_plus_10_percent = gps_ete_minutes * 1.1;
+		
+		// Apply color based on comparison
+		if (fuel_time_minutes >= ete_plus_10_percent) {
+			// Green: Fuel time >= ETE + 10%
+			$("#fuel_remaining_time").css("color", "#48e36cff");
+		} else if (fuel_time_minutes >= gps_ete_minutes) {
+			// Yellow: Fuel time between ETE and ETE + 10%
+			$("#fuel_remaining_time").css("color", "#ffd24aff");
+		} else {
+			// Red: Fuel time < ETE
+			$("#fuel_remaining_time").css("color", "#ff0019ff");
+		}
+	} else {
+		// Reset to default color if no valid data
+		$("#fuel_remaining_time").css("color", "");
+	}
+	
+	$("#vertical_speed").text(vertical_speed);
+	if (vertical_speed > 0) {
+		$("#vertical_speed_positive").show();
+	} else {
+		$("#vertical_speed_positive").hide();
+	}
+
 	//JF PA-28R
 	if (selected_plane.substring(0, 6) == "PA-28R") {
 		checkAndUpdateButton("#jf_pa28_bcn_light", JF_PA_28R_LIGHT_BCN);
@@ -1536,6 +1628,34 @@ function displayData() {
 		checkAndUpdateButton("#ASO_JU52C_AP_HEADING", ASO_JU52C_AP_HEADING, "On", "Off");
 		checkAndUpdateButton("#ASU_JU52C_ENTEISER", structural_deice, "Enteiser (On)", "Enteiser (Off)");
 	}
+  
+	// Autoswitch fuel selector
+	if (auto_switch_fuel_selector === true && last_time_switched_fuel_selector + 30000 < Date.now()) {
+		if (fuel_tank_selector == 2) {
+			triggerSimEvent('FUEL_SELECTOR_RIGHT',0,true);
+		} else if (fuel_tank_selector == 3) {
+			triggerSimEvent('FUEL_SELECTOR_LEFT',0,true);
+		}
+		last_time_switched_fuel_selector = Date.now();
+	}
+	
+	//Voice response sim_rate on change
+	if (sim_rate != last_simrate) {
+		if (speak_simrate === true && typeof sim_rate === 'number') {
+			const utterance = new SpeechSynthesisUtterance("Simrate "+sim_rate);
+			speechSynthesis.speak(utterance);
+		}
+	}
+	last_simrate = sim_rate;
+
+	//Speak touchdown speed
+	if (landing_t1 != last_landing_t1) {
+		if (speak_touchdown_speed === true && typeof landing_vs1 === 'number') {
+			const utterance = new SpeechSynthesisUtterance(landing_vs1 + "fpm");
+			speechSynthesis.speak(utterance);
+		}
+	}
+	last_landing_t1 = landing_t1;
 }
 
 function checkAndUpdateButton(buttonName, variableToCheck, onText="On", offText="Off") {
@@ -1560,7 +1680,7 @@ function toggleFollowPlane() {
 		followPlane = 1
 	}
     if (followPlane === 1) {
-        $("#followMode").text("Unfollow Plane")
+        $("#followMode").text("Unfollow")
         $("#followModeButton").removeClass("btn-danger").addClass("btn-primary")
 		marker.addTo(map);
     }
@@ -1569,9 +1689,21 @@ function toggleFollowPlane() {
         $("#followModeButton").removeClass("btn-primary").addClass("btn-danger")
     }
 	if (followPlane === 3) {
-        $("#followMode").text("Follow Plane")
+        $("#followMode").text("Follow")
 		marker.remove();
     }
+}
+
+function toggleMapData() {
+	if (map_data === true) {
+		$('#map_data').hide();
+		$('#mapDataText').text("Show Data");
+		map_data = false;
+	} else {
+		$('#map_data').show();
+		$('#mapDataText').text("Hide Data");
+		map_data = true;
+	}
 }
 
 function toggleGPStrack() {
@@ -1726,14 +1858,14 @@ function loadFltPln() {
 
     if (loadfltpln_switch === 1) {
         temporaryAlert('', "Loading flight plan.", "success", 2500);
-        $("#FltPlnText").text("Hide Flight Plan");
+        $("#FltPlnText").text("Hide FPL");
         $("#FltPlnButton").removeClass("btn-danger").addClass("btn-primary");
         url_to_call = "/fltpln";
         $.post (url_to_call);
         setTimeout(updatePolylineFltPln, 2500);
         gpswp.setStyle({opacity: 1.0});
     } else {
-        $("#FltPlnText").text("Load Flight Plan");
+        $("#FltPlnText").text("Load FPL");
         $("#FltPlnButton").removeClass("btn-primary").addClass("btn-danger");
         fltpln.setLatLngs([]);
         gpswp.setStyle({opacity: 0});
@@ -1811,4 +1943,44 @@ function aileronMinus() {
 function aileronReset() {
 	$("#TrimAileron").val(0);
 	triggerSimEvent('AILERON_TRIM_SET',$("#TrimAileron").val(),true);
+}
+
+function toggleAutoSwitchTanks() {
+	if (auto_switch_fuel_selector === true) {
+		auto_switch_fuel_selector = false;
+		$("#AutoswitchFuelSelectorButton").removeClass("btn-light");
+		$("#AutoswitchFuelSelectorButton").addClass("btn-secondary");
+	} else if (auto_switch_fuel_selector === false) {
+		auto_switch_fuel_selector = true;
+		$("#AutoswitchFuelSelectorButton").removeClass("btn-secondary");
+		$("#AutoswitchFuelSelectorButton").addClass("btn-light");
+	}
+}
+
+function toggleSpeakSimrate() {
+	if (speak_simrate === true) {
+		speak_simrate = false;
+		$("#SpeakSimrateButtonText").text("Off");
+		$("#SpeakSimrateButton").removeClass("btn-success");
+		$("#SpeakSimrateButton").addClass("btn-danger");
+	} else if (speak_simrate === false) {
+		speak_simrate = true;
+		$("#SpeakSimrateButtonText").text("On");
+		$("#SpeakSimrateButton").removeClass("btn-danger");
+		$("#SpeakSimrateButton").addClass("btn-success");
+	}
+}
+
+function toggleTouchdownSpeed() {
+	if (speak_touchdown_speed === true) {
+		speak_touchdown_speed = false;
+		$("#SpeakTouchdownSpeedButtonText").text("Off");
+		$("#SpeakTouchdownSpeedButton").removeClass("btn-success");
+		$("#SpeakTouchdownSpeedButton").addClass("btn-danger");
+	} else if (speak_touchdown_speed === false) {
+		speak_touchdown_speed = true;
+		$("#SpeakTouchdownSpeedButtonText").text("On");
+		$("#SpeakTouchdownSpeedButton").removeClass("btn-danger");
+		$("#SpeakTouchdownSpeedButton").addClass("btn-success");
+	}
 }

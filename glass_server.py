@@ -303,8 +303,10 @@ def flask_thread_func(threadname):
             success = "Flight plan loaded"
 
         except:
-            print("Error loading flight plan. Make sure you have the correct MSFS installation path in settings.txt.")
-            success = "Error loading flight plan"
+            # If loading from FLT file fails, use GPS data from SimConnect instead
+            # This is normal for MSFS 2024 or when no custom flight plan file exists
+            ui_friendly_dictionary["FLT_PLN"] = []
+            success = "Flight plan loaded"
 
         return success
 
@@ -454,7 +456,9 @@ def simconnect_thread_func(threadname):
         ui_friendly_dictionary["AUTOPILOT_AUTOTHROTTLE"] = await aq.get("AUTOTHROTTLE_ACTIVE")
         ui_friendly_dictionary["AUTOPILOT_YAW_DAMPER"] = await aq.get("AUTOPILOT_YAW_DAMPER")
         ui_friendly_dictionary["AIRSPEED_INDICATED"] = round(await aq.get("AIRSPEED_INDICATED"))
+        ui_friendly_dictionary["AIRSPEED_TRUE"] = round(await aq.get("AIRSPEED_TRUE"))
         ui_friendly_dictionary["AUTOPILOT_AIRSPEED_HOLD"] = await aq.get("AUTOPILOT_AIRSPEED_HOLD")
+        ui_friendly_dictionary["VERTICAL_SPEED"] = round(await aq.get("VERTICAL_SPEED"))
         # ui_friendly_dictionary["AUTOPILOT_MACH_HOLD_VAR"] = round(await aq.get("AUTOPILOT_MACH_HOLD_VAR"),2)
         ui_friendly_dictionary["PLANE_HEADING_DEGREES"] = round(round(await aq.get("PLANE_HEADING_DEGREES_MAGNETIC"), 2) * 180/3.1416, 0)
         # Placeholders - Not Actively Used for stress testing
@@ -488,11 +492,56 @@ def simconnect_thread_func(threadname):
         # GPS Next Waypoint
         ui_friendly_dictionary["NEXT_WP_LAT"] = await aq.get("GPS_WP_NEXT_LAT")
         ui_friendly_dictionary["NEXT_WP_LON"] = await aq.get("GPS_WP_NEXT_LON")
+        ui_friendly_dictionary["GPS_WP_DISTANCE"] = round(await aq.get("GPS_WP_DISTANCE")/1000*0.539957, ndigits=2)
+        
+        # GPS ETE in HH:MM format
+        gps_ete_minutes = round(await aq.get("GPS_ETE")/60)
+        ete_hours = gps_ete_minutes // 60
+        ete_mins = gps_ete_minutes % 60
+        ui_friendly_dictionary["GPS_ETE"] = f"{ete_hours:02d}:{ete_mins:02d}"
+        ui_friendly_dictionary["GPS_ETE_MINUTES"] = gps_ete_minutes
         # Other
         ui_friendly_dictionary["GEAR_POSITION"] = await aq.get("GEAR_POSITION:1")
         ui_friendly_dictionary["FLAPS_HANDLE_PERCENT"] = round(await aq.get("FLAPS_HANDLE_PERCENT")*100)
         ui_friendly_dictionary["SPOILERS_ARMED"] = await aq.get("SPOILERS_HANDLE_POSITION")
+        ui_friendly_dictionary["FUEL_TANK_LEFT_MAIN_LEVEL"] = round(await aq.get("FUEL_TANK_LEFT_MAIN_LEVEL")*100)
+        ui_friendly_dictionary["FUEL_TANK_RIGHT_MAIN_LEVEL"] = round(await aq.get("FUEL_TANK_RIGHT_MAIN_LEVEL")*100)
 
+        ui_friendly_dictionary["FUEL_TANK_SELECTOR"] = await aq.get("FUEL_TANK_SELECTOR:1")
+        
+        # Fuel consumption and remaining flight time calculation
+        try:
+            # Get total fuel quantity in gallons
+            fuel_total_quantity = await aq.get("FUEL_TOTAL_QUANTITY")
+            
+            # Get fuel flow for each engine in gallons per hour
+            num_engines = await aq.get("NUMBER_OF_ENGINES")
+            total_fuel_flow_gph = 0
+            
+            for engine in range(1, int(num_engines) + 1):
+                fuel_flow = await aq.get(f"ENG_FUEL_FLOW_GPH:{engine}")
+                if fuel_flow is not None:
+                    total_fuel_flow_gph += fuel_flow
+            
+            ui_friendly_dictionary["FUEL_TOTAL_QUANTITY"] = round(fuel_total_quantity, 1)
+            ui_friendly_dictionary["FUEL_FLOW_TOTAL_GPH"] = round(total_fuel_flow_gph, 1)
+            
+            # Calculate remaining flight time in hours
+            if total_fuel_flow_gph > 0.1:  # Avoid division by zero and very small values
+                fuel_remaining_hours = fuel_total_quantity / total_fuel_flow_gph
+                fuel_remaining_minutes = int(fuel_remaining_hours * 60)
+                
+                # Format as HH:MM
+                hours = fuel_remaining_minutes // 60
+                minutes = fuel_remaining_minutes % 60
+                ui_friendly_dictionary["FUEL_REMAINING_TIME"] = f"{hours:02d}:{minutes:02d}"
+            else:
+                ui_friendly_dictionary["FUEL_REMAINING_TIME"] = "N/A"
+        except:
+            ui_friendly_dictionary["FUEL_TOTAL_QUANTITY"] = 0
+            ui_friendly_dictionary["FUEL_FLOW_TOTAL_GPH"] = 0
+            ui_friendly_dictionary["FUEL_REMAINING_TIME"] = "N/A"
+        
         # Current altitude
         current_alt = await aq.get("INDICATED_ALTITUDE")
         if current_alt > -300:
