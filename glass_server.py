@@ -516,11 +516,44 @@ def simconnect_thread_func(threadname):
             
             # Get fuel flow for each engine in gallons per hour
             num_engines = await aq.get("NUMBER_OF_ENGINES")
+            engine_type = await aq.get("ENGINE_TYPE")
             total_fuel_flow_gph = 0
             
             for engine in range(1, int(num_engines) + 1):
-                fuel_flow = await aq.get(f"ENG_FUEL_FLOW_GPH:{engine}")
-                if fuel_flow is not None:
+                fuel_flow = None
+                
+                # Read all available fuel flow values
+                gph_raw = await aq.get(f"ENG_FUEL_FLOW_GPH:{engine}")
+                pph_raw = await aq.get(f"ENG_FUEL_FLOW_PPH:{engine}")
+                recip_pph = await aq.get(f"RECIP_ENG_FUEL_FLOW:{engine}") if engine_type == 0 else None
+                
+                # For piston engines, prefer PPH sources and convert
+                if engine_type == 0:
+                    # Try RECIP_ENG_FUEL_FLOW first for piston engines
+                    # NOTE: Despite documentation saying it's in PPH, some aircraft (like Aerostar 600)
+                    # return this value directly in GPH. We detect this by checking if the value 
+                    # makes sense as GPH (reasonable range: 5-100 GPH per engine for light aircraft)
+                    if recip_pph is not None and recip_pph > 0:
+                        # If value is in typical GPH range (5-100), use it directly
+                        if 5 <= recip_pph <= 100:
+                            fuel_flow = recip_pph
+                        else:
+                            # Otherwise assume it's PPH and convert
+                            fuel_flow = recip_pph / 6.0
+                    # Otherwise try ENG_FUEL_FLOW_PPH
+                    elif pph_raw is not None and pph_raw > 0:
+                        fuel_flow = pph_raw / 6.0
+                    # Last resort: ENG_FUEL_FLOW_GPH (but may be wrong for some aircraft)
+                    elif gph_raw is not None and gph_raw > 0:
+                        fuel_flow = gph_raw
+                else:
+                    # For turbine engines, use GPH first
+                    if gph_raw is not None and gph_raw > 0:
+                        fuel_flow = gph_raw
+                    elif pph_raw is not None and pph_raw > 0:
+                        fuel_flow = pph_raw / 6.7  # Jet fuel density
+                
+                if fuel_flow is not None and fuel_flow > 0:
                     total_fuel_flow_gph += fuel_flow
             
             ui_friendly_dictionary["FUEL_TOTAL_QUANTITY"] = round(fuel_total_quantity, 1)
@@ -537,7 +570,7 @@ def simconnect_thread_func(threadname):
                 ui_friendly_dictionary["FUEL_REMAINING_TIME"] = f"{hours:02d}:{minutes:02d}"
             else:
                 ui_friendly_dictionary["FUEL_REMAINING_TIME"] = "N/A"
-        except:
+        except Exception as e:
             ui_friendly_dictionary["FUEL_TOTAL_QUANTITY"] = 0
             ui_friendly_dictionary["FUEL_FLOW_TOTAL_GPH"] = 0
             ui_friendly_dictionary["FUEL_REMAINING_TIME"] = "N/A"
