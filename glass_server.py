@@ -3,7 +3,7 @@ from werkzeug.wrappers import response
 from SimConnect import *
 from SimConnect.simconnect_mobiflight import SimConnectMobiFlight
 from SimConnect.mobiflight_variable_requests import MobiFlightVariableRequests
-from time import sleep, localtime
+from time import sleep, localtime, time
 import random
 import logging
 import math
@@ -342,6 +342,11 @@ def simconnect_thread_func(threadname):
 
     # Initialize previous altitude for code stability
     previous_alt = -400
+    
+    # Initialize fuel flow calculation variables
+    fuel_flow_calc_last_quantity = None
+    fuel_flow_calc_last_time = None
+    fuel_flow_calc_value = 0
 
     # Initialize vars for landing info
     ui_friendly_dictionary["LANDING_VS1"] = "N/A"
@@ -358,6 +363,15 @@ def simconnect_thread_func(threadname):
         return f"{x:,}"
 
     async def ui_dictionary(ui_friendly_dictionary, previous_alt, landing_t1, landing_vs1, landing_t2, landing_vs2, landing_t3, landing_vs3, landing_g1, landing_g2, landing_g3):
+        # Aircraft info
+        aircraft_title = await aq.get("TITLE")
+        # TITLE returns bytes, decode it to string
+        try:
+            aircraft_title_str = aircraft_title.decode('utf-8') if isinstance(aircraft_title, bytes) else str(aircraft_title)
+            is_a2a_aircraft = "A2A" in aircraft_title_str
+        except:
+            is_a2a_aircraft = False
+        
         # Position
         try:
             ui_friendly_dictionary["LATITUDE"] = round(await aq.get("PLANE_LATITUDE"), 6)
@@ -511,8 +525,28 @@ def simconnect_thread_func(threadname):
         
         # Fuel consumption and remaining flight time calculation
         try:
+            nonlocal fuel_flow_calc_last_quantity, fuel_flow_calc_last_time, fuel_flow_calc_value
+            
             # Get total fuel quantity in gallons
             fuel_total_quantity = await aq.get("FUEL_TOTAL_QUANTITY")
+            
+            # Calculate fuel flow from fuel quantity change over time (only for A2A aircraft)
+            if is_a2a_aircraft:
+                current_time = time()
+                if fuel_flow_calc_last_quantity is not None and fuel_flow_calc_last_time is not None:
+                    time_diff = current_time - fuel_flow_calc_last_time
+                    fuel_diff = fuel_flow_calc_last_quantity - fuel_total_quantity
+                    # Only update if enough time has passed (at least 5 seconds for stable measurement)
+                    if time_diff >= 5.0:
+                        if fuel_diff > 0.01:  # At least 0.01 gallon consumed
+                            # Calculate GPH: (gallons consumed / seconds) * 3600 seconds/hour
+                            fuel_flow_calc_value = (fuel_diff / time_diff) * 3600
+                        fuel_flow_calc_last_quantity = fuel_total_quantity
+                        fuel_flow_calc_last_time = current_time
+                else:
+                    # First measurement - initialize
+                    fuel_flow_calc_last_quantity = fuel_total_quantity
+                    fuel_flow_calc_last_time = current_time
             
             # Get fuel flow for each engine in gallons per hour
             num_engines = await aq.get("NUMBER_OF_ENGINES")
@@ -532,10 +566,11 @@ def simconnect_thread_func(threadname):
                     # Try RECIP_ENG_FUEL_FLOW first for piston engines
                     # NOTE: Despite documentation saying it's in PPH, some aircraft (like Aerostar 600)
                     # return this value directly in GPH. We detect this by checking if the value 
-                    # makes sense as GPH (reasonable range: 5-100 GPH per engine for light aircraft)
+                    # makes sense as GPH (reasonable range: 1-150 GPH per engine)
                     if recip_pph is not None and recip_pph > 0:
-                        # If value is in typical GPH range (5-100), use it directly
-                        if 5 <= recip_pph <= 100:
+                        # If value is in typical GPH range (1-150), use it directly
+                        # This covers idle (~1-3 GPH) to full power (~150 GPH for large piston engines)
+                        if 1 <= recip_pph <= 150:
                             fuel_flow = recip_pph
                         else:
                             # Otherwise assume it's PPH and convert
@@ -555,6 +590,26 @@ def simconnect_thread_func(threadname):
                 
                 if fuel_flow is not None and fuel_flow > 0:
                     total_fuel_flow_gph += fuel_flow
+            
+            # Check for unrealistic fuel flow (too low for current airspeed)
+            # A2A aircraft report incorrect fuel flow via standard SimConnect
+            current_airspeed = await aq.get("AIRSPEED_INDICATED")
+            
+            # For A2A aircraft: use calculated value from fuel quantity change
+            if is_a2a_aircraft:
+                if fuel_flow_calc_value > 5.0:
+                    # Use calculated value for A2A aircraft (only when we have a valid measurement)
+                    total_fuel_flow_gph = fuel_flow_calc_value
+                elif total_fuel_flow_gph > 0:
+                    # Use SimConnect value as fallback (during startup/ground or when fuel not changing yet)
+                    pass
+                else:
+                    # No valid data yet
+                    total_fuel_flow_gph = 0
+            # For other aircraft: validate SimConnect reading
+            elif current_airspeed > 100 and total_fuel_flow_gph < 10:
+                # Invalid reading for high-speed flight
+                total_fuel_flow_gph = 0
             
             ui_friendly_dictionary["FUEL_TOTAL_QUANTITY"] = round(fuel_total_quantity, 1)
             ui_friendly_dictionary["FUEL_FLOW_TOTAL_GPH"] = round(total_fuel_flow_gph, 1)
@@ -1012,6 +1067,28 @@ def simconnect_thread_func3(threadname):
                 "(L:XMLVAR_AP_HEADING_HOLD)")
             ui_friendly_dictionary["ASO_JU52C_PITOT"] = vr.get(
                 "(L:SWITCH_Vorwaermung)")
+
+        # A2A Aircraft L-Vars (Aerostar 600, etc.)
+        # Read fuel flow from A2A aircraft that don't report correctly via SimConnect
+        try:
+            eng1_flow = vr.get("(L:Eng1_FuelFlowGauge)")
+            eng2_flow = vr.get("(L:Eng2_FuelFlowGauge)")
+            
+            # Always store the values (even if 0) and total
+            ui_friendly_dictionary["A2A_ENG1_FUEL_FLOW"] = eng1_flow if eng1_flow is not None else 0
+            ui_friendly_dictionary["A2A_ENG2_FUEL_FLOW"] = eng2_flow if eng2_flow is not None else 0
+            
+            # Calculate total
+            total = 0
+            if eng1_flow is not None and eng1_flow > 0:
+                total += eng1_flow
+            if eng2_flow is not None and eng2_flow > 0:
+                total += eng2_flow
+            
+            ui_friendly_dictionary["A2A_FUEL_FLOW_TOTAL"] = total
+        except Exception as e:
+            ui_friendly_dictionary["A2A_FUEL_FLOW_TOTAL"] = 0
+            pass
 
         # Set sleep to minimize performance impact
         sleep(0.15)
